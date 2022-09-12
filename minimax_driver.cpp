@@ -9,7 +9,7 @@ using namespace std;
 using namespace std::chrono;
 using namespace std::chrono::_V2;
 
-// #define ALPHA_BETA_PRUNING 1
+# define ALPHA_BETA_PRUNING 1
 
 int main()
 {

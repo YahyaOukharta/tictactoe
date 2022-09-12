@@ -67,6 +67,7 @@ public:
     vector<int> available_moves() const
     {
         vector<int> moves;
+        if (status < 3) return moves;
         int full_board = xboard | oboard;
 
         for (int i = 0; i < 9; ++i)

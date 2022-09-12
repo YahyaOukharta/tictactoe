@@ -12,7 +12,7 @@ alpha_beta:
 
 mcts:
 	clear
-	g++ mcts_driver.cpp
+	g++ mcts_driver.cpp #-fsanitize=address -g
 	./a.out
 
 fclean:

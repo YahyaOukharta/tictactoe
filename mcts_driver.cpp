@@ -14,11 +14,29 @@ int main()
 {
     MCTS mcts;
 
-    Node *node;
+    Microboard b;
+    int i = 0;
 
-    while ((node = mcts.select_node(&mcts.root))){
-        node->b.print();
+    while (b.status == 3)
+    {
+        time_point<system_clock, nanoseconds> start = high_resolution_clock::now();
+
+        PlayerId player = i%2 ? PLAYER_O : PLAYER_X;
+        int move = mcts.search(b, 1000);
+
+        time_point<system_clock, nanoseconds> stop = high_resolution_clock::now();
+        milliseconds duration = duration_cast<milliseconds>(stop - start);
+
+        cout << "Time taken by function: "
+            << duration.count() << " ms" << endl;
+
+        b.move(move);
+            b.print();
+
+        i++;
     }
+
+
 
     return (0);
 }

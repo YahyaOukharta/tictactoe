@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <vector>
-
+#include <unordered_map>
 using namespace std;
 
 enum PlayerId
@@ -29,9 +29,10 @@ public:
     int oboard;
     GameStatus status;
     PlayerId playerToPlay;
-
+    int lastMove;
     Microboard() // fresh board
     {
+        lastMove = -1;
         xboard = 0b000000000;
         oboard = 0b000000000;
         status = IN_PROGRESS;
@@ -40,6 +41,7 @@ public:
 
     Microboard(Microboard const &b) // cloning
     {
+        lastMove = b.lastMove;
         xboard = b.xboard;
         oboard = b.oboard;
         status = b.status;
@@ -53,7 +55,7 @@ public:
         playerToPlay = b.playerToPlay;
         move(m);
     }
-    ~Microboard() // cloning and applying bove
+    ~Microboard()
     {
     }
 
@@ -88,6 +90,7 @@ public:
             playerToPlay = PLAYER_X;
         }
         status = getStatus();
+        lastMove = m;
     }
 
     GameStatus getStatus() const {
@@ -121,6 +124,28 @@ public:
         }
         cout << endl;
         cout << "status = " << status << endl << endl;
+    }
+
+    size_t hash_board() const {
+        hash<string> hasher;
+        string b;
+        for (int y = 0; y < 3; ++y){
+            for (int x = 0; x < 3; ++x){
+                if ((xboard & maskOfMove(y*3+x)))
+                    b+="x";
+                else if ((oboard & maskOfMove(y*3+x)))
+                    b+="o";
+                else 
+                    b+= " ";
+            }
+        }
+        b+=to_string(status);
+        return hasher(b);
+    }
+    size_t hash_board_move(int move) const {
+        Microboard n(*this,move);
+        n.move(move);
+        return n.hash_board();
     }
 };
 

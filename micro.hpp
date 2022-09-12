@@ -1,3 +1,5 @@
+#ifndef __MICRO_BOARD_HPP__
+#define __MICRO_BOARD_HPP__
 #include <iostream>
 #include <cstring>
 #include <vector>
@@ -50,6 +52,9 @@ public:
         status = b.status;
         playerToPlay = b.playerToPlay;
         move(m);
+    }
+    ~Microboard() // cloning and applying bove
+    {
     }
 
     int maskOfMove(int m) const
@@ -118,3 +123,5 @@ public:
         cout << "status = " << status << endl << endl;
     }
 };
+
+#endif

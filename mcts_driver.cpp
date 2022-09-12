@@ -7,7 +7,7 @@
 using namespace std;
 
 using namespace std::chrono;
-using namespace std::chrono;
+using namespace std::chrono::_V2;
 
 
 int main()

@@ -1,5 +1,6 @@
 #ifndef __MCTS_HPP__
 #include "micro.hpp"
+#include <cmath>
 # include <map>
 class Node {
     public:
@@ -53,7 +54,9 @@ class MCTS {
     public:
     Node root;
     PlayerId me;
-    Node *select_node(Node *node){
+
+    Node *select_node(Node *node)
+    {
 
         while (!node->is_terminal()){
             if (node->is_fully_expanded)
@@ -64,7 +67,8 @@ class MCTS {
         return node;
     }
 
-    Node *expand_node(Node *node){
+    Node *expand_node(Node *node)
+    {
         vector<int> moves = node->b.available_moves();
         for (int i = 0; i < moves.size(); ++i){
             // only expand to children not found yet
@@ -84,7 +88,8 @@ class MCTS {
         return 0;
     }
 
-    Node * get_best_move(Node *node, int exploration_constant, PlayerId me){
+    Node * get_best_move(Node *node, int exploration_constant, PlayerId me)
+    {
         float best_score = -1000000;
         Node *best_move;
 

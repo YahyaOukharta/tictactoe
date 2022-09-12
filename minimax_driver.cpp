@@ -7,9 +7,9 @@
 using namespace std;
 
 using namespace std::chrono;
-using namespace std::chrono;
+using namespace std::chrono::_V2;
 
-#define ALPHA_BETA_PRUNING 1
+// #define ALPHA_BETA_PRUNING 1
 
 int main()
 {
@@ -18,7 +18,7 @@ int main()
     {
         b.print();
 
-        steady_clock::time_point start = high_resolution_clock::now();
+        time_point<system_clock, nanoseconds> start = high_resolution_clock::now();
 
         int bestMove;
         if (ALPHA_BETA_PRUNING)
@@ -26,7 +26,7 @@ int main()
         else
             bestMove = getBestMove(b);
 
-        steady_clock::time_point stop = high_resolution_clock::now();
+        time_point<system_clock, nanoseconds> stop = high_resolution_clock::now();
         microseconds duration = duration_cast<microseconds>(stop - start);
 
         cout << "Time taken by function: "

@@ -74,7 +74,7 @@ int getBestMoveAB(Microboard const & board){
     int bestMove = -1;
 
     for (int i = 0; i < moves.size(); ++i){
-        int v = alphaBeta(Microboard(board,moves[i]),9, true, board.playerToPlay, -100, 100);
+        int v = alphaBeta(Microboard(board,moves[i]),9, false, board.playerToPlay, -100, 100);
         if (v > bestScore){
             bestScore = v;
             bestMove = moves[i];
@@ -90,7 +90,7 @@ int getBestMove(Microboard const & board){
     int bestMove = -1;
 
     for (int i = 0; i < moves.size(); ++i){
-        int v = minimax(Microboard(board,moves[i]),9, true, board.playerToPlay);
+        int v = minimax(Microboard(board,moves[i]),9, false, board.playerToPlay);
         if (v > bestScore){
             bestScore = v;
             bestMove = moves[i];

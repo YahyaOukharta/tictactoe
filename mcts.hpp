@@ -93,7 +93,7 @@ class MCTS {
             if (node->is_fully_expanded)
             {
                 // cout << "getting best move in select" << endl;
-                node = get_best_move(node,2 , me);
+                node = get_best_move(node,sqrt(2), me);
             }
             else
             {

@@ -17,7 +17,7 @@ int main()
     Microboard b;
     int i = 0;
 
-    while (b.status == 3)
+    while (1)
     {
         time_point<system_clock, nanoseconds> start = high_resolution_clock::now();
 
@@ -33,7 +33,17 @@ int main()
         b.move(move);
             b.print();
 
+
         i++;
+        if (b.status < 3){
+
+            if (b.status != 2){
+                cout << "something weird is going on "<<endl;
+            }
+            b = Microboard();
+            i = 0;
+
+        }
     }
 
 

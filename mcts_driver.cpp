@@ -31,7 +31,7 @@ int main()
             << duration.count() << " ms" << endl;
 
         b.move(move);
-            b.print();
+        b.print();
 
 
         i++;
@@ -39,6 +39,7 @@ int main()
 
             if (b.status != 2){
                 cout << "something weird is going on "<<endl;
+                exit(1);
             }
             b = Microboard();
             i = 0;

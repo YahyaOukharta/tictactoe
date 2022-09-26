@@ -20,6 +20,7 @@ int main()
 
         time_point<system_clock, nanoseconds> start = high_resolution_clock::now();
 
+        
         int bestMove;
         if (ALPHA_BETA_PRUNING)
             bestMove = getBestMoveAB(b); // get bestMove

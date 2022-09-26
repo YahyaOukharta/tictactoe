@@ -1,7 +1,7 @@
 
 
-all:
-	g++ main.cpp
+mcts:
+	g++ mcts_driver.cpp -g -fsanitize=address
 	./a.out
 
 fclean:

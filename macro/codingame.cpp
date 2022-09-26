@@ -1,5 +1,3 @@
-#ifndef __MACRO_BOARD_HPP__
-#define __MACRO_BOARD_HPP__
 #include <iostream>
 #include <cstring>
 #include <cmath>
@@ -106,21 +104,21 @@ public:
         for (int y = 0; y < 3; ++y){
             for (int x = 0; x < 3; ++x){
                 if ((xboard & maskOfMove(y*3+x)))
-                    cout << "X ";
+                    cerr << "X ";
                 else if ((oboard & maskOfMove(y*3+x)))
-                    cout << "O ";
+                    cerr << "O ";
                 else 
-                    cout << "- ";
+                    cerr << "- ";
             }   
-            cout << endl;
+            cerr << endl;
         }
 
         vector<int> moves = available_moves();
         for (int i = 0;i<moves.size(); ++i){
-            cout << moves[i] << " ";
+            cerr << moves[i] << " ";
         }
-        cout << endl;
-        cout << "status = " << status << endl << endl;
+        cerr << endl;
+        cerr << "status = " << status << endl << endl;
     }
 };
 
@@ -177,6 +175,8 @@ class Macroboard
         return hash % 13;
     }
     int dehash_board(int hash) const {
+        if (next_micro != -1)
+            return next_micro;
         return hash / 13;
     }
 
@@ -210,27 +210,27 @@ class Macroboard
                 int idx = (j / 3)+i/3*3;
                 Microboard const &b = micro[idx];
                 if (b.status < 2)
-                    cout << (b.status == (int)PLAYER_X ? "X " : "O ");
+                    cerr << (b.status == (int)PLAYER_X ? "X " : "O ");
                 else if ((b.xboard & b.maskOfMove(i%3 * 3 + j%3)))
-                    cout << "x ";
+                    cerr << "x ";
                 else if ((b.oboard & b.maskOfMove(i%3 * 3 + j%3)))
-                    cout << "o ";
+                    cerr << "o ";
                 else 
-                    cout << "- ";
+                    cerr << "- ";
             }
-            cout <<endl;
+            cerr <<endl;
         }
-        cout << "player To play " << (playerToPlay == PLAYER_X ? "X" : "O") << endl;
-        cout << " game  status  " << status() << endl;
+        cerr << "player To play " << (playerToPlay == PLAYER_X ? "X" : "O") << endl;
+        cerr << " game  status  " << status() << endl;
 
-        cout << "  next micro   " << next_micro << endl;
+        cerr << "  next micro   " << next_micro << endl;
         if (next_micro == -1)
             for(auto m : available_moves())
-                cout << dehash_board(m) << "/" << dehash_move(m) << " ";
+                cerr << dehash_board(m) << "/" << dehash_move(m) << " ";
         else
             for(auto m : available_moves())
-                cout << m << " ";
-        cout <<endl;
+                cerr << m << " ";
+        cerr <<endl;
     }
 
 };
@@ -400,8 +400,8 @@ class MCTS{
             b.move(b.moves[dist(rng)%b.moves.size()]);
         }
         if (b.status() == 2) return 0;
-        if (b.status() == (int)me) return 10;
-        return -10;
+        if (b.status() == (int)me) return 1;
+        return -1;
     }
 
     int getBestMove(){
@@ -409,4 +409,60 @@ class MCTS{
     }
 };
 
-#endif
+int main()
+{
+
+    // game loop
+
+    int turn = 0;
+    PlayerId me = PLAYER_X;
+    Macroboard b;
+    while (1) {
+        int op_y;
+        int op_x;
+        cin >> op_y >> op_x; cin.ignore();
+        if (op_y != -1 && turn == 0)
+            me = PLAYER_O;
+
+        cerr << op_x << " " <<op_y << endl;
+        int x,y;
+        int bx,by;
+        if (op_y != -1)
+        {
+            x = op_x%3;
+            y = op_y%3;
+            bx = op_x/3;
+            by = op_y/3;
+            //b.print();
+
+            cerr << x << " " << y << "-" << bx << " " << by << "-" << by*3 + bx << " " << x+y*3 << endl;
+            if (b.next_micro == -1)
+                b.move(b.hash_move(by*3 +bx, x+y*3));
+            else
+                b.move(x+y*3);
+            //b.print();
+        }
+
+        int valid_action_count;
+        cin >> valid_action_count; cin.ignore();
+        for (int i = 0; i < valid_action_count; i++) {
+            int row;
+            int col;
+            cin >> row >> col; cin.ignore();
+        }
+
+        MCTS mcts(b);
+        mcts.searchUntil(me, turn == 0 ? 1e6 : 100000);
+        int hash = mcts.getBestMove();
+
+        int board = b.dehash_board(hash);
+        int move = b.dehash_move(hash);
+        cerr << board << " " << move <<endl;
+        cout << board / 3 * 3 + move / 3 <<" "<< board % 3 * 3 + move % 3 << endl;
+
+        b.move(hash);
+        b.print();
+        // cout << "0 0" << endl;
+        turn++;
+    }
+}

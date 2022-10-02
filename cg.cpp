@@ -1,6 +1,19 @@
-#ifndef BOARD_HPP
-#define BOARD_HPP
+#include <iostream>
+#include <cstring>
+#include <cmath>
+#include <vector>
+#include <unordered_map>
+#include <random>
+#include <algorithm>
+#include <chrono>
 
+#pragma GCC optimize("Ofast","unroll-loops", "omit-frame-pointer", "inline")
+#pragma GCC option("arch=native", "tune=native", "no-zero-upper")
+#pragma GCC target("rdrnd", "popcnt", "avx", "bmi2")
+
+using namespace std;
+using namespace std::chrono;
+using namespace std::chrono::_V2;
 #include <iostream>
 #include <cstring>
 #include <bitset>
@@ -106,27 +119,27 @@ public:
 
     void print() const
     {
-        cout << "hash : " << hash() << endl;
+        cerr << "hash : " << hash() << endl;
         for (int y = 0; y < 3; y++)
         {
             for (int x = 0; x < 3; x++)
             {
                 if (boards[PLAYER_X][8 - y * 3 + x])
-                    cout << "X";
+                    cerr << "X";
                 else if (boards[PLAYER_O][8 - y * 3 + x])
-                    cout << "O";
+                    cerr << "O";
                 else
-                    cout << "-";
+                    cerr << "-";
             }
-            cout << endl;
+            cerr << endl;
         }
         vector<int> moves = available_moves();
         for (int i = 0; i < moves.size(); i++)
         {
-            cout << i << " ";
+            cerr << i << " ";
         }
-        cout << endl;
-        cout << "status :" << status << endl;
+        cerr << endl;
+        cerr << "status :" << status << endl;
     }
 };
 struct Zobrist
@@ -179,7 +192,7 @@ public:
 
     Macroboard(const Macroboard &b)
     {
-        // cout << "copy "<<endl;
+        // cerr << "copy "<<endl;
         macro = b.macro;
         for (int i = 0; i < 9; i++)
             micro[i] = b.micro[i];
@@ -190,7 +203,7 @@ public:
 
     Macroboard(const Macroboard &b, int _move)
     {
-        // cout << "copy with move"<<endl;
+        // cerr << "copy with move"<<endl;
 
         macro = b.macro;
         for (int i = 0; i < 9; i++)
@@ -278,28 +291,261 @@ public:
                 Microboard const &b = micro[boardIdx];
                 // b.print();
                 if (b.status < 2)
-                    cout << (b.status == X_WON ? 'X' : 'O');
+                    cerr << (b.status == X_WON ? 'X' : 'O');
                 else if (b.boards[PLAYER_X][8 - cellIdx])
-                    cout << "x";
+                    cerr << "x";
                 else if (b.boards[PLAYER_O][8 - cellIdx])
-                    cout << "o";
+                    cerr << "o";
                 else
-                    cout << "-";
+                    cerr << "-";
             }
-            cout << endl;
+            cerr << endl;
         }
-        cout << "next_micro :" << next_micro << endl;
-        cout << "player to play :" << (playerToPlay == PLAYER_X ? "X" : "O") << endl;
+        cerr << "next_micro :" << next_micro << endl;
+        cerr << "player to play :" << (playerToPlay == PLAYER_X ? "X" : "O") << endl;
 
         // vector<int> moves = available_moves();
         for (int i = 0; i < moves.size(); i++)
         {
-            cout << moves[i] << ",";
-            // cout << unhash_board(moves[i]) << "/" << unhash_cell(moves[i]) << " ";
+            cerr << moves[i] << ",";
+            // cerr << unhash_board(moves[i]) << "/" << unhash_cell(moves[i]) << " ";
         }
-        cout << endl;
-        cout << "status :" << status() << endl;
+        cerr << endl;
+        cerr << "status :" << status() << endl;
     }
 };
 
-#endif
+random_device dev;
+mt19937 rng(dev());
+uniform_int_distribution<mt19937::result_type> dist(1, 1e6);
+
+class Node; 
+unordered_map<Zobrist, Node *, hash_fn> zobrist;
+
+class Node {
+    public:  
+
+    int score = 0;
+    
+    int visits = 0;
+    float log_visits = 0;
+
+    Node *parent = 0;
+    unordered_map<int, Node*> children;
+
+    Macroboard b;
+
+    int is_terminal;
+    int fully_expanded;
+
+    Node(Macroboard const &_b, int _move = -1,Node *p = 0){
+        b = _b;
+        if(_move != -1)
+            b.move(_move);
+        // _b.print();
+        // b.print();
+        parent = p;
+        is_terminal = b.status() != IN_PROGRESS;
+        fully_expanded = is_terminal;
+    }
+
+    void backpropagate(int score){
+        Node *current = this;
+        while(current){
+            current->score += score;
+            current->visits++;
+            current->log_visits = log(current->visits);
+            current = current->parent;
+        }
+    }
+
+    Node *expand() {
+
+        if (b.moves.size() == 0) {
+            cerr <<"shouldnt be here" << endl;
+            return this;
+            //exit(1);
+        }
+
+        int rnd = dist(rng) % b.moves.size();
+        int m = b.moves[rnd];
+
+        Node *c = new Node(b,m, this);
+        zobrist.insert(make_pair(c->b.hash(), c));
+
+        b.moves.erase(b.moves.begin() + rnd); // erasing
+        if (b.moves.size() == 0) {
+            fully_expanded = true;
+        }
+
+        children.insert(make_pair(m, c));
+
+        return (c);
+    }
+
+    Node *best_uct(PlayerId me, float ec = 0){
+        float best_score = -1e5;
+        Node *best = 0;
+        int f = (b.playerToPlay == me ? 1 : -1);
+        for (auto ch: children){
+            Node *c = ch.second;
+            float uct = ((float)c->score / c->visits + ec * sqrtf(log_visits / c->visits)) * f;
+            if (uct > best_score){
+                best_score = uct;
+                best = c;
+            }
+        }
+        return best;
+    }
+
+    void freeNode(){
+        for (auto ch: children)
+            ch.second->freeNode();
+        delete this;
+    }
+
+};
+class MCTS {
+
+public:
+    Node *root = 0;
+    Node *rt = 0;
+    PlayerId me;
+    MCTS(Macroboard const &b, PlayerId _me){
+        update_root(b,me);
+        root = rt;
+    }
+
+    ~MCTS(){
+        if (root)
+        root->freeNode();
+    }
+
+    void update_root(Macroboard const &b, PlayerId _me){
+        // auto it = zobrist.find(b.hash());
+        // if (it != zobrist.end()){
+        //     cerr <<"WOAH" <<endl;
+        //     rt = it->second;
+        // }
+        // else
+            rt = new Node(b);
+        me = _me;
+    }
+
+
+    Node *select() const {
+        Node *current = rt;
+        while (current->fully_expanded && !current->is_terminal){
+            current = current->best_uct(me,2);
+        }
+        if (current->is_terminal) return current;
+        return current->expand();
+    }
+
+    void search()
+    {
+        int iters = 1000;
+
+        while (iters--){
+            Node *n = select();
+            int score = rollout(n->b);
+            n->backpropagate(score);
+        }
+        cerr <<"done searching "<< endl;
+    }
+
+
+    void searchUntil(int us)
+    {
+        time_point<system_clock, nanoseconds> start = high_resolution_clock::now();
+        int i = 0;
+        while (duration_cast<microseconds>(high_resolution_clock::now() - start).count() < us){
+            Node *n = select();
+            int score = rollout(n->b);
+            n->backpropagate(score);
+            i++;
+        }
+        cerr << i << " iters" << endl;
+    }
+
+    int rollout(Macroboard b) const {
+        while (b.status() == IN_PROGRESS)
+            b.move(b.moves[dist(rng)%b.moves.size()]);
+        if (b.status() == 2) return (b.macro.boards[0].count() - b.macro.boards[1].count()) * (me == PLAYER_X ? 1 : -1);
+        if (b.status() == (GameStatus)me) return 10;
+        return (-10);
+    }
+
+    int bestMove()const{
+        float best_score = -1e5;
+        int best = 0;
+        for (auto ch: root->children){
+            Node *c = ch.second;
+            float uct = (float)c->score / c->visits;
+            cerr << c->score <<'/'<< c->visits<<" ";
+            if (uct > best_score){
+                best_score = uct;
+                best = ch.first;
+            }
+        }
+        cerr << endl;
+        return best;
+    }
+
+};
+
+int main()
+{
+
+    // game loop
+
+    int turn = 0;
+    PlayerId me = PLAYER_X;
+    Macroboard b;
+    while (1) {
+        int op_y;
+        int op_x;
+        cin >> op_y >> op_x; cin.ignore();
+        if (op_y != -1 && turn == 0)
+            me = PLAYER_O;
+
+        //cerr << op_x << " " <<op_y << endl;
+        int x,y;
+        int bx,by;
+        if (op_y != -1)
+        {
+            x = op_x%3;
+            y = op_y%3;
+            bx = op_x/3;
+            by = op_y/3;
+            //b.print();
+
+            //cerr << x << " " << y << "-" << bx << " " << by << "-" << by*3 + bx << " " << x+y*3 << endl;
+                b.move(b.hash_move(by*3 +bx, x+y*3));
+            //b.print();
+        }
+
+        int valid_action_count;
+        cin >> valid_action_count; cin.ignore();
+        for (int i = 0; i < valid_action_count; i++) {
+            int row;
+            int col;
+            cin >> row >> col; cin.ignore();
+        }
+
+        MCTS mcts(b,me);
+        mcts.searchUntil(turn == 0 ? 950000 : 95000);
+        int hash = mcts.bestMove();
+        cerr << "move hash " << hash <<endl;
+        
+            int board = b.unhash_board(hash);
+            int move = b.unhash_cell(hash);
+            cerr << board << " " << move <<endl;
+            cout << board / 3 * 3 + move / 3 <<" "<< board % 3 * 3 + move % 3 <<" TEST" <<endl;
+
+        b.move(hash);
+        //b.print();
+        // cerr << "0 0" << endl;
+        turn++;
+    }
+}

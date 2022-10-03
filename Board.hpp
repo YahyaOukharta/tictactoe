@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <vector>
 using namespace std;
-
+#define ulong unsigned long
 #define FULL_BOARD 511
 
 enum PlayerId
@@ -129,51 +129,24 @@ public:
         cout << "status :" << status << endl;
     }
 };
-struct Zobrist
-{
-    ulong boards[9];
-    int next_micro;
 
-    bool operator==(Zobrist const &h) const
-    {
-        return memcmp(h.boards, boards, sizeof(ulong) * 9) == 0 && h.next_micro == next_micro;
-    }
-};
-
-struct hash_fn
-{
-    size_t operator() (Zobrist const &h) const
-    {
-        size_t h0 = hash<ulong>()(h.boards[0]);
-        size_t h1 = hash<ulong>()(h.boards[1]);
-        size_t h2 = hash<ulong>()(h.boards[2]);
-        size_t h3 = hash<ulong>()(h.boards[3]);
-        size_t h4 = hash<ulong>()(h.boards[4]);
-        size_t h5 = hash<ulong>()(h.boards[5]);
-        size_t h6 = hash<ulong>()(h.boards[6]);
-        size_t h7 = hash<ulong>()(h.boards[7]);
-        size_t h8 = hash<ulong>()(h.boards[8]);
-
-        size_t h9 = hash<int>()(h.next_micro);
- 
-        return h0 ^ h1 << 1 ^ h2 << 2 ^ h3 << 3 ^ h4 << 4 ^ h5 <<5 ^ h6 <<6^ h7<<7 ^ h8 <<8^ h9;
-    }
-};
 class Macroboard
 {
 public:
     Microboard macro;
     Microboard micro[9];
 
+
     int next_micro;
     PlayerId playerToPlay;
 
     vector<int> moves = {112, 111, 110, 109, 108, 107, 106, 105, 104, 99, 98, 97, 96, 95, 94, 93, 92, 91, 86, 85, 84, 83, 82, 81, 80, 79, 78, 73, 72, 71, 70, 69, 68, 67, 66, 65, 60, 59, 58, 57, 56, 55, 54, 53, 52, 47, 46, 45, 44, 43, 42, 41, 40, 39, 34, 33, 32, 31, 30, 29, 28, 27, 26, 21, 20, 19, 18, 17, 16, 15, 14, 13, 8, 7, 6, 5, 4, 3, 2, 1, 0};
-
+    string hash;
     Macroboard()
     {
         next_micro = -1;
         playerToPlay = PLAYER_X;
+        hash = "000000000-1";
         // moves = available_moves();
     }
 
@@ -186,6 +159,7 @@ public:
         next_micro = b.next_micro;
         playerToPlay = b.playerToPlay;
         moves = available_moves();
+        hash = b.hash;
     }
 
     Macroboard(const Macroboard &b, int _move)
@@ -202,9 +176,14 @@ public:
 
     GameStatus status() const { return macro.status; }
 
-    Zobrist hash() const
+    string hashBoard() const
     {
-        return {{micro[0].hash(), micro[1].hash(), micro[2].hash(), micro[3].hash(), micro[4].hash(), micro[5].hash(), micro[6].hash(), micro[7].hash(), micro[8].hash()}, next_micro};
+        string s;
+        for (int i = 0; i < 9; i++){
+            s += to_string(micro[i].hash());
+        }
+        s+=to_string(next_micro);
+        return s;
     }
 
     void move(int hash)
@@ -224,6 +203,7 @@ public:
         moves = available_moves();
         if (moves.size() == 0 && macro.status == IN_PROGRESS)
             macro.status = TIE;
+        this->hash = hashBoard();
     }
 
     vector<int> available_moves() const
@@ -268,6 +248,7 @@ public:
 
     void print() const
     {
+        cout <<"hash "<<hash << endl;
         for (int y = 0; y < 9; y++)
         {
             for (int x = 0; x < 9; x++)
@@ -298,7 +279,8 @@ public:
             // cout << unhash_board(moves[i]) << "/" << unhash_cell(moves[i]) << " ";
         }
         cout << endl;
-        cout << "status :" << status() << endl;
+        cout << "status :" << status() << endl << "-----" << endl<<endl;
+        
     }
 };
 

@@ -1,6 +1,6 @@
 #pragma GCC optimize("O3,inline,omit-frame-pointer,unroll-loops","unsafe-math-optimizations","no-trapping-math")
 #pragma GCC option("arch=native","tune=native","no-zero-upper")
-#pragma GCC target("sse,sse2,sse3,ssse3,sse4,mmx,avx,avx2,popcnt,rdrnd,abm,bmi2,fma")
+// #pragma GCC target("sse,sse2,sse3,ssse3,sse4,mmx,avx,avx2,popcnt,rdrnd,abm,bmi2,fma")
 #include <iostream>
 #include <bitset>
 #include <random>
@@ -186,10 +186,10 @@ int pop_random_move(uint &moves)
     reset_bit128(moves, m);
     return m;
 }
-
 int get_random_move(uint moves)
 {
     int m = dist(mt) % popcount_u128(moves);
+    //cerr << m << endl;
     uint mv = moves;
     /// print_uint(moves);
     // cerr <<"random : " <<m<<endl;
@@ -206,7 +206,7 @@ U64 zobrist[2][81];
 void init_zobrist(){
     for (int i = 0; i < 2; i++){
         for (int j = 0; j < 81; j++){
-            zobrist[i][j] = dist(mt);
+            zobrist[i][j] = dist(mt) * dist(mt);
         }
     }
 }
@@ -351,38 +351,30 @@ public:
 };
 
 
+
+
+
+
 int main()
 {
+    init_zobrist();
 
-    Macro m;
+    Macro b;
 
-    // m.print();
-    // int i = 0;
-    // while (m.status == IN_PROGRESS)
-    // {
-    //     uint moves = m.moves();
-    //     int move = pop_random_move(moves);
-    //     cerr <<"move " << move << endl;
-    //     m.move(move, (i&1  ? O : X));
-    //     m.print();
-    //     //exit(1);
-    //     i++;
-    // }
+    while(b.status == 3)
+    { 
+        b.print();
+        uint moves = b.moves();
+        print_uint(moves);
 
-    while (m.status == IN_PROGRESS)
-    {
-        auto start = high_resolution_clock::now();
+        int move = pop_random_move(moves);
 
-        print_uint(m.moves());
-        auto end = high_resolution_clock::now();
-        auto full_count = duration_cast<microseconds>(end - start).count()/1000;
+        cerr << move <<endl;
 
-        cerr << "total execution time " << full_count << "ms" <<  endl;
-        cerr <<"turn of "<<m.turn_of() << endl;
-        m.move(get_random_move(m.moves()), m.turn_of());
-        m.print();
+        print_uint(moves);
+
+        b.move(move, b.turn_of());
+
     }
-    m.print();
-
-    return (0);
+    b.print();
 }

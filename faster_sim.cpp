@@ -317,6 +317,14 @@ public:
         return res;
     }
 
+    void random_move(){
+        move(get_random_move(moves()),turn_of());
+    }
+
+    int score(int p){
+        return 0;
+    }
+
     void print()
     {
         cerr << "hash : " << hash << endl;
@@ -350,8 +358,102 @@ public:
     }
 };
 
+float constant = 1.42f;
+
+class Node {
+
+    Node *parent = 0;
+    unordered_map<int, Node *> children = {};
+
+    float   score = 0;
+    int     visits = 0;
+    float   logvisits = 0;
+
+    Macro b;
+    uint moves = ((uint)1 << 81)-1;
+
+    Node(){}
+
+    Node (Node *p,int m){
+        parent = p;
+
+        b = p->b;
+        b.move(m, b.turn_of());
+
+        moves = b.moves();
+    }
+
+    int fully_expanded(){
+        return moves == 0 && children.size();
+    }
+
+    int is_terminal(){
+        return moves == 0 && !children.size();
+    }
 
 
+    Node *expand(Node *n){
+        if (n->moves == 0){
+            return n;
+        }
+        int move = pop_random_move(n->moves);
+
+        children[move] = new Node(this, move);
+        
+        //add to state lookup here
+
+        return children[move];
+    }
+
+
+    int rollout(int me ){
+        if (is_terminal())return b.score(me);
+        Macro sim = b;
+        while (sim.status == IN_PROGRESS){
+            sim.random_move();
+        }
+        return sim.score(me);
+    }
+
+    void backpropagate(int sc, int me){
+        Node *n = this;
+        while (n)
+        {
+            n->score += sc * (n->b.turn_of() == me ? 1 : -1);
+            n->visits++;
+            n->logvisits = log(n->visits);
+
+            n = n->parent;
+        }
+    }
+
+    float exploration(){
+        return constant * sqrtf(parent->logvisits / visits);
+    }
+
+    float exploitation(){
+        return score / visits;
+    }
+
+    float uct(){
+        return exploration() + exploitation();
+    }
+
+    Node *bestChild(){
+        Node *b = 0;
+        float best = -1000000.f;
+        for (auto c: children){
+            float uct = c.second->uct();
+            if (c.second->uct() > best){
+                best = uct;
+                b = c.second;
+            }
+        }
+        
+        return b;
+    }
+
+};
 
 
 
